@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Waste Analytics Dashboard | Bengaluru</title>
+    <meta name="description"
+        content="Interactive dashboard visualizing E-Waste recycling efficiency data across Bengaluru wards.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js Matrix Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+    <div class="background-effects">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-brand">
+                <div class="logo-icon">♻️</div>
+                <h2>E-Waste<br><span class="highlight">Analytics</span></h2>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-tab="tab-dashboard">
+                    <span class="icon">📊</span> Dashboard
+                </button>
+                <button class="nav-btn" data-tab="tab-locator">
+                    <span class="icon">📍</span> Nearest Recycler
+                </button>
+                <button class="nav-btn" data-tab="tab-actionplan">
+                    <span class="icon">⚠️</span> Action Plan
+                </button>
+                <button class="nav-btn" data-tab="tab-wardanalysis">
+                    <span class="icon">🔍</span> Ward Analysis
+                </button>
+                <button class="nav-btn" data-tab="tab-forecast">
+                    <span class="icon">📈</span> Forecast Simulator
+                </button>
+                <button class="nav-btn" data-tab="tab-intel">
+                    <span class="icon">🧠</span> Strategic Intel
+                </button>
+            </nav>
+
+            <div class="sidebar-settings" style="margin-top: auto; margin-bottom: 2rem; border-top: 1px solid var(--glass-border); padding-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 0.5rem;">
+                    <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">Live Data Feed</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="liveDataToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <p>Bengaluru City<br>Data Model v1.0</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-header">
+                <div>
+                    <h1 id="pageTitle">Live Dashboard</h1>
+                    <p class="subtitle">Ward-Level Recycling Efficiency & Prediction</p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button id="themeToggle" class="theme-btn" title="Toggle Light/Dark Theme">
+                        <span class="icon" id="themeIcon">☀️</span>
+                    </button>
+                    <div class="status-indicator">
+                        <span class="dot"></span>
+                        <span class="status-text">System Active</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                
+                <!-- TAB: Dashboard (Visualizations) -->
+                <div id="tab-dashboard" class="tab-pane active">
+                    <div class="glass-panel" style="padding-bottom: 2rem;">
+                        <div class="panel-header">
+                            <h2>Overall E-Waste Metrics</h2>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end;">
+                                <button id="exportWeeklyBtn" class="action-btn" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); color: var(--accent-primary);">
+                                    <span class="icon">📄</span> Weekly Report
+                                </button>
+                                <button id="exportCsvBtn" class="action-btn">
+                                    <span class="icon">📥</span> Export Data (CSV)
+                                </button>
+                            </div>
+                        </div>
+                        <div class="charts-grid">
+                            <div class="chart-container">
+                                <h3>E-Waste Collection by Ward (Tons)</h3>
+                                <canvas id="barChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h3>Recycling Efficiency (%)</h3>
+                                <canvas id="doughnutChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h3>Density vs Recycle Gap Score (Zone-wise)</h3>
+                                <canvas id="scatterChart"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <h3>Recycle Gap Score by Year</h3>
+                                <canvas id="heatmapChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Locator -->
+                <div id="tab-locator" class="tab-pane">
+                    <div class="glass-panel" style="max-width: 600px; margin: 0 auto;">
+                        <div class="panel-header" style="margin-bottom: 1.5rem; display: block;">
+                            <h2>📍 Find Nearest Recycler Facility</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.5rem; font-weight: 300;">Select a ward to view authorized e-waste collection centers.</p>
+                        </div>
+                        <div class="locator-body">
+                            <label for="wardSelect" style="color: var(--text-muted); font-size: 0.9rem;">Select your Ward:</label>
+                            <select id="wardSelect" class="modern-select">
+                                <option value="none">-- Choose Ward --</option>
+                                <option value="Electronics City">Electronics City</option>
+                                <option value="Koramangala">Koramangala</option>
+                                <option value="Whitefield">Whitefield</option>
+                                <option value="HSR Layout">HSR Layout</option>
+                                <option value="Indiranagar">Indiranagar</option>
+                                <option value="Marathahalli">Marathahalli</option>
+                                <option value="Hebbal">Hebbal</option>
+                                <option value="Yelahanka">Yelahanka</option>
+                                <option value="Rajajinagar">Rajajinagar</option>
+                                <option value="Malleshwaram">Malleshwaram</option>
+                                <option value="JP Nagar">JP Nagar</option>
+                                <option value="BTM Layout">BTM Layout</option>
+                                <option value="Banashankari">Banashankari</option>
+                                <option value="Jayanagar">Jayanagar</option>
+                                <option value="Shivajinagar">Shivajinagar</option>
+                                <option value="MG Road Area">MG Road Area</option>
+                                <option value="Yeshwanthpur">Yeshwanthpur</option>
+                                <option value="Bommanahalli">Bommanahalli</option>
+                                <option value="KR Puram">KR Puram</option>
+                                <option value="Sarjapur Road">Sarjapur Road</option>
+                            </select>
+                            
+                            <div id="recyclerResult" class="result-card hidden" style="position: relative;">
+                                <div style="position: absolute; top: 1.5rem; right: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                    <span class="dot" style="animation: pulse 1.5s infinite; background-color: #10b981; box-shadow: 0 0 8px #10b981;" id="liveIndicator"></span>
+                                    <span style="font-size: 0.8rem; font-weight: 600; color: #10b981; letter-spacing: 0.05em;" id="liveStatusText">LIVE</span>
+                                </div>
+                                <h3 id="rName" style="color: var(--text-main); font-size: 1.5rem; margin-bottom: 0.5rem;">Recycler Name</h3>
+                                <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                                    <p id="rStatus" class="status-badge">Available Facility</p>
+                                    <p id="rOpenStatus" class="status-badge" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.5);">🟢 Open Now</p>
+                                </div>
+                                
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                                    <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+                                        <p style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Current Wait Time</p>
+                                        <p style="font-size: 1.4rem; font-weight: 600; color: #f59e0b;" id="rWaitTime">~5 mins</p>
+                                    </div>
+                                    <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+                                        <p style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Storage Load</p>
+                                        <p style="font-size: 1.4rem; font-weight: 600; color: #3b82f6;" id="rStorageLoad">42%</p>
+                                        <div style="width: 100%; background: rgba(255,255,255,0.1); height: 4px; border-radius: 2px; margin-top: 0.5rem;">
+                                            <div id="rStorageBar" style="height: 100%; background: #3b82f6; border-radius: 2px; width: 42%; transition: all 0.5s ease;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p style="font-size: 0.95rem; color: var(--text-muted);"><strong>Max Capacity:</strong> <span id="rCap">180 Tons/Year</span></p>
+                                <p style="font-size: 0.95rem; color: var(--text-muted);"><strong>Contact:</strong> 1800-ECO-WASTE</p>
+                            </div>
+                            <div id="noRecyclerResult" class="result-card danger hidden">
+                                <h3>⚠️ No Official Facility</h3>
+                                <p>There are currently no authorized e-waste recyclers in this ward.</p>
+                                <p style="margin-top:0.8rem;"><strong>Action:</strong> Visit the nearest facility in <span id="nearestWard" style="color: var(--text-main); font-weight:600;"></span>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Ward Analysis -->
+                <div id="tab-wardanalysis" class="tab-pane">
+                    <div class="glass-panel" style="max-width: 800px; margin: 0 auto;">
+                        <div class="panel-header" style="margin-bottom: 1.5rem; display: block;">
+                            <h2>🔍 Ward-Wise Analysis</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.5rem; font-weight: 300;">Search and select a ward to view its detailed interactive metrics.</p>
+                        </div>
+                        <div class="locator-body">
+                            <label for="wardAnalysisInput" style="color: var(--text-muted); font-size: 0.9rem;">Search Ward:</label>
+                            <input list="wardList" id="wardAnalysisInput" class="modern-input" placeholder="Type to search ward...">
+                            <datalist id="wardList"></datalist>
+                            
+                            <div id="wardAnalysisResult" class="result-card hidden" style="margin-top: 1.5rem; background: rgba(0,0,0,0.2); border-color: var(--glass-border);">
+                                <h3 id="waName" style="color: var(--accent-secondary); font-size: 1.8rem; margin-bottom: 1.5rem; text-align: center;">Ward Name</h3>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                                    <div class="stat-box">
+                                        <p style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Collection</p>
+                                        <p style="font-size: 1.8rem; font-weight: 600; color: #3b82f6;"><span id="waCollection">0</span> <span style="font-size: 0.9rem; font-weight: 400; color: var(--text-muted)">Tons</span></p>
+                                    </div>
+                                    <div class="stat-box">
+                                        <p style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Efficiency</p>
+                                        <p style="font-size: 1.8rem; font-weight: 600; color: #10b981;"><span id="waEfficiency">0</span><span style="font-size: 0.9rem; font-weight: 400; color: var(--text-muted)">%</span></p>
+                                    </div>
+                                    <div class="stat-box">
+                                        <p style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Recyclers</p>
+                                        <p style="font-size: 1.8rem; font-weight: 600; color: #f59e0b;" id="waRecyclers">0</p>
+                                    </div>
+                                    <div class="stat-box">
+                                        <p style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Gap Score</p>
+                                        <p style="font-size: 1.8rem; font-weight: 600; color: #ef4444;" id="waGapScore">0</p>
+                                    </div>
+                                </div>
+                                <div style="height: 250px; position: relative;">
+                                    <canvas id="wardTrendChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Forecast Simulator -->
+                <div id="tab-forecast" class="tab-pane">
+                    <div class="glass-panel" style="max-width: 800px; margin: 0 auto;">
+                        <div class="panel-header" style="margin-bottom: 1.5rem; display: block;">
+                            <h2>📈 E-Waste Forecast Simulator</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.5rem; font-weight: 300;">Simulate projected e-waste generation using ARIMA growth rates.</p>
+                        </div>
+                        <div class="locator-body">
+                            <div style="margin-bottom: 2rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <label for="yearSlider" style="color: var(--text-muted); font-size: 0.9rem;">Target Year:</label>
+                                    <span id="yearDisplay" style="color: var(--accent-primary); font-weight: 700; font-size: 1.5rem;">2026</span>
+                                </div>
+                                <input type="range" id="yearSlider" class="modern-slider" min="2026" max="2035" step="1" value="2026">
+                            </div>
+                            
+                            <div class="table-container">
+                                <table class="modern-table" id="forecastTable" style="max-height: 400px; display: block; overflow-y: auto;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 40%;">Ward</th>
+                                            <th style="width: 30%;">Current (2025)</th>
+                                            <th style="width: 30%;">Projected (<span class="proj-year">2026</span>)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="forecastBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Action Plan -->
+                <div id="tab-actionplan" class="tab-pane">
+                    <div class="glass-panel">
+                        <div class="panel-header" style="margin-bottom: 1.5rem; display: block;">
+                            <h2>⚠️ Infrastructure Action Plan</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.5rem; font-weight: 300;">Prioritized list of wards requiring immediate recycling infrastructure development.</p>
+                        </div>
+                        <div class="table-container">
+                            <table class="modern-table" style="max-height: 500px; display: block; overflow-y: auto;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 25%;">Ward</th>
+                                        <th style="width: 25%;">Recyclers</th>
+                                        <th style="width: 25%;">Gap Score</th>
+                                        <th style="width: 25%;">Priority</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="priority-high"><td>MG Road Area</td><td>0</td><td>90</td><td>Urgent (Add 2+)</td></tr>
+                                    <tr class="priority-high"><td>Shivajinagar</td><td>1</td><td>80</td><td>Urgent (Add 1+)</td></tr>
+                                    <tr class="priority-med"><td>Yelahanka</td><td>1</td><td>75</td><td>High (Add 1)</td></tr>
+                                    <tr class="priority-med"><td>Indiranagar</td><td>1</td><td>70</td><td>High (Add 1)</td></tr>
+                                    <tr class="priority-med"><td>Yeshwanthpur</td><td>1</td><td>70</td><td>High (Add 1)</td></tr>
+                                    <tr class="priority-med"><td>Banashankari</td><td>1</td><td>70</td><td>High (Add 1)</td></tr>
+                                    <tr class="priority-med"><td>Rajajinagar</td><td>1</td><td>65</td><td>High (Add 1)</td></tr>
+                                    <tr class="priority-med"><td>Malleshwaram</td><td>1</td><td>65</td><td>High (Add 1)</td></tr>
+                                    <tr class="priority-low"><td>BTM Layout</td><td>2</td><td>60</td><td>Monitor</td></tr>
+                                    <tr class="priority-low"><td>HSR Layout</td><td>2</td><td>55</td><td>Monitor</td></tr>
+                                    <tr class="priority-low"><td>Koramangala</td><td>2</td><td>50</td><td>Monitor</td></tr>
+                                    <tr class="priority-low"><td>Electronics City</td><td>3</td><td>40</td><td>Monitor</td></tr>
+                                    <tr class="priority-low"><td>Whitefield</td><td>4</td><td>30</td><td>Monitor</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: Strategic Intel -->
+                <div id="tab-intel" class="tab-pane">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; max-width: 1000px; margin: 0 auto;">
+                        
+                        <!-- Feature 2: Economic Value & Resource Recovery -->
+                        <div class="glass-panel" style="display: flex; flex-direction: column;">
+                            <div class="panel-header" style="margin-bottom: 1.5rem; display: block;">
+                                <h2>💰 Resource Recovery Engine</h2>
+                                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.5rem; font-weight: 300;">Estimated economic value of precious metals extracted from Bengaluru's e-waste.</p>
+                            </div>
+                            
+                            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem;">
+                                <p style="color: #10b981; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Total Estimated Value (YTD)</p>
+                                <p style="font-size: 3rem; font-weight: 700; color: var(--text-main); margin: 0.5rem 0;">₹<span id="totalValueCounter">14.24</span> <span style="font-size: 1.2rem; color: var(--text-muted);">Crores</span></p>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="stat-box" style="text-align: center;">
+                                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🥇</div>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Gold (Au)</p>
+                                    <p style="font-size: 1.5rem; font-weight: 600; color: #f59e0b;" id="goldRecovery">12.42 <span style="font-size: 0.8rem;">kg</span></p>
+                                </div>
+                                <div class="stat-box" style="text-align: center;">
+                                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🥈</div>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Silver (Ag)</p>
+                                    <p style="font-size: 1.5rem; font-weight: 600; color: #94a3b8;" id="silverRecovery">145.2 <span style="font-size: 0.8rem;">kg</span></p>
+                                </div>
+                                <div class="stat-box" style="text-align: center; grid-column: span 2;">
+                                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🥉</div>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Copper & Palladium</p>
+                                    <p style="font-size: 1.5rem; font-weight: 600; color: #d97706;" id="copperRecovery">4,280 <span style="font-size: 0.8rem;">Tons</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feature 1: AI Insights Feed -->
+                        <div class="glass-panel" style="display: flex; flex-direction: column;">
+                            <div class="panel-header" style="margin-bottom: 1.5rem; display: block;">
+                                <h2>🧠 AI Insights & Alerts</h2>
+                                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.5rem; font-weight: 300;">Real-time natural language analysis from the prediction model.</p>
+                            </div>
+                            
+                            <div class="insights-feed" style="display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; max-height: 440px; padding-right: 0.5rem;">
+                                <!-- Alert Item -->
+                                <div style="background: rgba(239, 68, 68, 0.05); border-left: 4px solid #ef4444; padding: 1rem; border-radius: 0 8px 8px 0;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <span style="background: #ef4444; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">Critical Alert</span>
+                                        <span style="font-size: 0.8rem; color: var(--text-muted);">Just now</span>
+                                    </div>
+                                    <p style="font-size: 0.95rem; color: var(--text-main); line-height: 1.5;">Whitefield's collection rate is growing 3x faster than its recycling capacity. A new facility is needed by Q3 2026 to avoid a backlog.</p>
+                                </div>
+                                
+                                <!-- Optimization Item -->
+                                <div style="background: rgba(59, 130, 246, 0.05); border-left: 4px solid #3b82f6; padding: 1rem; border-radius: 0 8px 8px 0;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <span style="background: #3b82f6; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">Optimization</span>
+                                        <span style="font-size: 0.8rem; color: var(--text-muted);">12 mins ago</span>
+                                    </div>
+                                    <p style="font-size: 0.95rem; color: var(--text-main); line-height: 1.5;">Shifting 20% of logistics routes from JP Nagar to the MG Road Area could improve overall city processing efficiency by 4.5%.</p>
+                                </div>
+                                
+                                <!-- Insight Item -->
+                                <div style="background: rgba(16, 185, 129, 0.05); border-left: 4px solid #10b981; padding: 1rem; border-radius: 0 8px 8px 0;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <span style="background: #10b981; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">Trend Insight</span>
+                                        <span style="font-size: 0.8rem; color: var(--text-muted);">1 hr ago</span>
+                                    </div>
+                                    <p style="font-size: 0.95rem; color: var(--text-main); line-height: 1.5;">Smartphone and battery disposals have spiked 15% in Koramangala this month, correlating with the new corporate refresh cycles.</p>
+                                </div>
+                                
+                                <!-- Warning Item -->
+                                <div style="background: rgba(245, 158, 11, 0.05); border-left: 4px solid #f59e0b; padding: 1rem; border-radius: 0 8px 8px 0;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <span style="background: #f59e0b; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">Risk Warning</span>
+                                        <span style="font-size: 0.8rem; color: var(--text-muted);">2 hrs ago</span>
+                                    </div>
+                                    <p style="font-size: 0.95rem; color: var(--text-main); line-height: 1.5;">Shivajinagar continues to show a high Gap Score (80) with only 1 authorized recycler. Risk of illegal dumping is classified as HIGH.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Dashboard Logic -->
+    <script>
+        // Tab Navigation Logic
+        const navBtns = document.querySelectorAll('.nav-btn');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        const pageTitle = document.getElementById('pageTitle');
+
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active classes
+                navBtns.forEach(b => b.classList.remove('active'));
+                tabPanes.forEach(p => p.classList.remove('active'));
+
+                // Add active class to clicked button and target tab
+                btn.classList.add('active');
+                const targetId = btn.getAttribute('data-tab');
+                document.getElementById(targetId).classList.add('active');
+
+                // Update page title
+                if (targetId === 'tab-dashboard') pageTitle.textContent = 'Live Dashboard';
+                if (targetId === 'tab-locator') pageTitle.textContent = 'Recycler Locator';
+                if (targetId === 'tab-actionplan') pageTitle.textContent = 'Action Plan';
+                if (targetId === 'tab-wardanalysis') pageTitle.textContent = 'Ward Analysis';
+                if (targetId === 'tab-forecast') pageTitle.textContent = 'Forecast Simulator';
+                if (targetId === 'tab-intel') pageTitle.textContent = 'Strategic Intel';
+            });
+        });
+
+        // Theme Toggle Logic
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        let isLightMode = false;
+        
+        themeToggle.addEventListener('click', () => {
+            isLightMode = !isLightMode;
+            if (isLightMode) {
+                document.body.classList.add('light-mode');
+                themeIcon.textContent = '🌙';
+            } else {
+                document.body.classList.remove('light-mode');
+                themeIcon.textContent = '☀️';
+            }
+        });
+
+        // Set default font for Chart.js
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = "'Outfit', sans-serif";
+
+        // Data derived from EWASTE.py (All 20 Wards)
+        const wards = [
+            "Electronics City", "Koramangala", "Whitefield", "HSR Layout", "Indiranagar", 
+            "Marathahalli", "Hebbal", "Yelahanka", "Rajajinagar", "Malleshwaram", 
+            "JP Nagar", "BTM Layout", "Banashankari", "Jayanagar", "Shivajinagar", 
+            "MG Road Area", "Yeshwanthpur", "Bommanahalli", "KR Puram", "Sarjapur Road"
+        ];
+        const collectionData = [
+            3600, 3040, 4160, 2480, 2320, 3200, 2240, 2080, 1680, 1560, 
+            2720, 2600, 2200, 2080, 1480, 1360, 1840, 2360, 2480, 2880
+        ];
+        const efficiencyData = [
+            59, 51, 67, 51, 43, 59, 51, 43, 43, 43, 
+            51, 51, 43, 51, 43, 35, 43, 51, 51, 59
+        ];
+
+        // 1. Bar Chart: E-Waste Collection by Ward
+        const ctxBar = document.getElementById('barChart').getContext('2d');
+        const barChartInstance = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: wards,
+                datasets: [{
+                    label: 'Collected E-Waste (Tons)',
+                    data: collectionData,
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' } },
+                    x: { grid: { display: false }, ticks: { maxRotation: 90, minRotation: 45 } }
+                }
+            }
+        });
+
+        // 2. Doughnut Chart: Recycling Efficiency
+        const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
+        const doughnutChartInstance = new Chart(ctxDoughnut, {
+            type: 'doughnut',
+            data: {
+                labels: wards,
+                datasets: [{
+                    label: 'Efficiency (%)',
+                    data: efficiencyData,
+                    backgroundColor: [
+                        '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
+                        '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                cutout: '70%'
+            }
+        });
+
+        // Live Dashboard Update Logic
+        let isLiveDataEnabled = true;
+        const liveDataToggle = document.getElementById('liveDataToggle');
+        const statusIndicatorText = document.querySelector('.status-text');
+        const statusIndicatorDot = document.querySelector('.dot');
+
+        liveDataToggle.addEventListener('change', (e) => {
+            isLiveDataEnabled = e.target.checked;
+            if (isLiveDataEnabled) {
+                statusIndicatorText.textContent = 'System Active';
+                statusIndicatorDot.style.animation = 'pulse 2s infinite';
+                statusIndicatorDot.style.backgroundColor = 'var(--accent-primary)';
+                statusIndicatorDot.style.boxShadow = '0 0 10px var(--accent-primary)';
+            } else {
+                statusIndicatorText.textContent = 'Feed Paused';
+                statusIndicatorDot.style.animation = 'none';
+                statusIndicatorDot.style.backgroundColor = 'var(--text-muted)';
+                statusIndicatorDot.style.boxShadow = 'none';
+            }
+        });
+
+        setInterval(() => {
+            if (!isLiveDataEnabled) return;
+            let needsUpdate = false;
+            for (let i = 0; i < wards.length; i++) {
+                if (Math.random() > 0.5) {
+                    collectionData[i] += Math.floor(Math.random() * 8); // +0 to +7 tons
+                    const effChange = (Math.random() * 2) - 1; // -1% to +1%
+                    let newEff = efficiencyData[i] + effChange;
+                    if (newEff > 100) newEff = 100;
+                    if (newEff < 0) newEff = 0;
+                    efficiencyData[i] = parseFloat(newEff.toFixed(1));
+                    needsUpdate = true;
+                }
+            }
+
+            if (needsUpdate) {
+                // Update Intel Tab Recovery numbers dynamically to simulate live data
+                let currentVal = parseFloat(document.getElementById('totalValueCounter').innerText);
+                document.getElementById('totalValueCounter').innerText = (currentVal + 0.01).toFixed(2);
+                
+                let currentGold = parseFloat(document.getElementById('goldRecovery').innerText);
+                document.getElementById('goldRecovery').innerHTML = (currentGold + 0.02).toFixed(2) + ' <span style="font-size: 0.8rem;">kg</span>';
+                
+                let currentSilver = parseFloat(document.getElementById('silverRecovery').innerText);
+                document.getElementById('silverRecovery').innerHTML = (currentSilver + 0.15).toFixed(1) + ' <span style="font-size: 0.8rem;">kg</span>';
+                
+                let currentCopperStr = document.getElementById('copperRecovery').innerText.replace(/,/g, '');
+                let currentCopper = parseInt(currentCopperStr);
+                document.getElementById('copperRecovery').innerHTML = (currentCopper + Math.floor(Math.random() * 5)).toLocaleString() + ' <span style="font-size: 0.8rem;">Tons</span>';
+
+                barChartInstance.update();
+                doughnutChartInstance.update();
+
+                // Update Ward Analysis Tab dynamically if open
+                const selectedWard = document.getElementById('wardAnalysisInput').value;
+                if (selectedWard && !document.getElementById('wardAnalysisResult').classList.contains('hidden')) {
+                    const index = wards.indexOf(selectedWard);
+                    if (index !== -1) {
+                        document.getElementById('waCollection').textContent = Math.round(collectionData[index]);
+                        document.getElementById('waEfficiency').textContent = efficiencyData[index].toFixed(1);
+                    }
+                }
+            }
+        }, 3000);
+
+        // 3. Scatter Chart: Density vs Recycle Gap Score (Zone-wise)
+        const scatterDataEast = [
+            { x: 15.2, y: 30, ward: 'Whitefield' },
+            { x: 27.6, y: 70, ward: 'Indiranagar' },
+            { x: 17.9, y: 45, ward: 'Marathahalli' },
+            { x: 12.7, y: 50, ward: 'KR Puram' },
+            { x: 12.9, y: 45, ward: 'Sarjapur Road' }
+        ];
+        const scatterDataSouth = [
+            { x: 15.8, y: 40, ward: 'Electronics City' },
+            { x: 31.1, y: 50, ward: 'Koramangala' },
+            { x: 20.9, y: 55, ward: 'HSR Layout' },
+            { x: 20.1, y: 55, ward: 'JP Nagar' },
+            { x: 28.8, y: 60, ward: 'BTM Layout' },
+            { x: 20.2, y: 70, ward: 'Banashankari' },
+            { x: 25.7, y: 55, ward: 'Jayanagar' },
+            { x: 15.0, y: 55, ward: 'Bommanahalli' }
+        ];
+        const scatterDataCentral = [
+            { x: 29.8, y: 80, ward: 'Shivajinagar' },
+            { x: 29.3, y: 90, ward: 'MG Road Area' }
+        ];
+        const scatterDataNorth = [
+            { x: 15.0, y: 55, ward: 'Hebbal' },
+            { x: 8.3, y: 75, ward: 'Yelahanka' }
+        ];
+        const scatterDataWest = [
+            { x: 21.4, y: 65, ward: 'Rajajinagar' },
+            { x: 23.2, y: 65, ward: 'Malleshwaram' },
+            { x: 16.0, y: 70, ward: 'Yeshwanthpur' }
+        ];
+
+        const ctxScatter = document.getElementById('scatterChart').getContext('2d');
+        new Chart(ctxScatter, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    { label: 'East', data: scatterDataEast, backgroundColor: '#3b82f6', borderColor: '#3b82f6', pointRadius: 5, pointHoverRadius: 7 },
+                    { label: 'South', data: scatterDataSouth, backgroundColor: '#10b981', borderColor: '#10b981', pointRadius: 5, pointHoverRadius: 7 },
+                    { label: 'Central', data: scatterDataCentral, backgroundColor: '#f59e0b', borderColor: '#f59e0b', pointRadius: 5, pointHoverRadius: 7 },
+                    { label: 'North', data: scatterDataNorth, backgroundColor: '#ef4444', borderColor: '#ef4444', pointRadius: 5, pointHoverRadius: 7 },
+                    { label: 'West', data: scatterDataWest, backgroundColor: '#8b5cf6', borderColor: '#8b5cf6', pointRadius: 5, pointHoverRadius: 7 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { color: '#94a3b8', boxWidth: 10 } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.raw.ward + ': Density ' + context.parsed.x + 'k, Score ' + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: 'Density (Pop/km² in thousands)', color: '#94a3b8' }, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#94a3b8' } },
+                    y: { title: { display: true, text: 'Recycle Gap Score', color: '#94a3b8' }, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#94a3b8' } }
+                }
+            }
+        });
+
+        // 4. Heatmap: Recycle Gap Score (All 20 Wards)
+        const years = ['2024', '2025', '2026'];
+        const heatmapData = [];
+        const gapScores = [
+            [42, 40, 38], // Electronics City
+            [52, 50, 48], // Koramangala
+            [32, 30, 28], // Whitefield
+            [57, 55, 53], // HSR Layout
+            [72, 70, 68], // Indiranagar
+            [47, 45, 43], // Marathahalli
+            [57, 55, 53], // Hebbal
+            [77, 75, 73], // Yelahanka
+            [67, 65, 63], // Rajajinagar
+            [67, 65, 63], // Malleshwaram
+            [57, 55, 53], // JP Nagar
+            [62, 60, 58], // BTM Layout
+            [72, 70, 68], // Banashankari
+            [57, 55, 53], // Jayanagar
+            [82, 80, 78], // Shivajinagar
+            [92, 90, 88], // MG Road Area
+            [72, 70, 68], // Yeshwanthpur
+            [57, 55, 53], // Bommanahalli
+            [52, 50, 48], // KR Puram
+            [47, 45, 43]  // Sarjapur Road
+        ];
+
+        wards.forEach((ward, i) => {
+            years.forEach((year, j) => {
+                heatmapData.push({
+                    x: year,
+                    y: ward,
+                    v: gapScores[i][j]
+                });
+            });
+        });
+
+        const ctxHeatmap = document.getElementById('heatmapChart').getContext('2d');
+        new Chart(ctxHeatmap, {
+            type: 'matrix',
+            data: {
+                datasets: [{
+                    label: 'Recycle Gap Score',
+                    data: heatmapData,
+                    backgroundColor: function(context) {
+                        const value = context.dataset.data[context.dataIndex].v;
+                        const ratio = Math.max(0, Math.min(1, (value - 20) / 70));
+                        const hue = (1 - ratio) * 140; 
+                        return `hsl(${hue}, 80%, 50%)`;
+                    },
+                    borderColor: 'rgba(255,255,255,0.05)',
+                    borderWidth: 1,
+                    width: ({chart}) => (chart.chartArea || {}).width / years.length - 2,
+                    height: ({chart}) => (chart.chartArea || {}).height / wards.length - 2
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: () => '',
+                            label: (context) => {
+                                const d = context.dataset.data[context.dataIndex];
+                                return `${d.y} (${d.x}): Score ${d.v}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { type: 'category', labels: years, grid: { display: false }, ticks: { color: '#94a3b8' } },
+                    y: { type: 'category', labels: wards, grid: { display: false }, ticks: { color: '#94a3b8', font: {size: 9} } }
+                }
+            }
+        });
+
+        // 5. Locator Logic
+        const wardSelect = document.getElementById('wardSelect');
+        const recyclerResult = document.getElementById('recyclerResult');
+        const noRecyclerResult = document.getElementById('noRecyclerResult');
+        const rName = document.getElementById('rName');
+        const rCap = document.getElementById('rCap');
+        const nearestWard = document.getElementById('nearestWard');
+
+        const recyclerData = {
+            'Electronics City': { count: 3, name: 'GreenBin E-Waste', cap: '540 Tons/Year' },
+            'Koramangala': { count: 2, name: 'Koramangala Centre', cap: '360 Tons/Year' },
+            'Whitefield': { count: 4, name: 'EcoTech Recyclers', cap: '720 Tons/Year' },
+            'HSR Layout': { count: 2, name: 'HSR Circular Economy', cap: '360 Tons/Year' },
+            'Indiranagar': { count: 1, name: 'Indira Eco Facility', cap: '180 Tons/Year' },
+            'Marathahalli': { count: 3, name: 'TechRecycle Hub', cap: '540 Tons/Year' },
+            'Hebbal': { count: 2, name: 'NorthZone Recycling', cap: '360 Tons/Year' },
+            'Yelahanka': { count: 1, name: 'Yelahanka E-Waste', cap: '180 Tons/Year' },
+            'Rajajinagar': { count: 1, name: 'WestEco Centre', cap: '180 Tons/Year' },
+            'Malleshwaram': { count: 1, name: 'Malleswaram Recycle', cap: '180 Tons/Year' },
+            'JP Nagar': { count: 2, name: 'JP Nagar E-Waste', cap: '360 Tons/Year' },
+            'BTM Layout': { count: 2, name: 'BTM Eco Solutions', cap: '360 Tons/Year' },
+            'Banashankari': { count: 1, name: 'Banashankari Recyclers', cap: '180 Tons/Year' },
+            'Jayanagar': { count: 2, name: 'Jayanagar Green', cap: '360 Tons/Year' },
+            'Shivajinagar': { count: 1, name: 'Central E-Waste', cap: '180 Tons/Year' },
+            'MG Road Area': { count: 0, nearest: 'Shivajinagar' },
+            'Yeshwanthpur': { count: 1, name: 'Yeshwanthpur Eco', cap: '180 Tons/Year' },
+            'Bommanahalli': { count: 2, name: 'Bommanahalli Recycle', cap: '360 Tons/Year' },
+            'KR Puram': { count: 2, name: 'KR Puram Centre', cap: '360 Tons/Year' },
+            'Sarjapur Road': { count: 3, name: 'Sarjapur Green Hub', cap: '540 Tons/Year' }
+        };
+
+        wardSelect.addEventListener('change', (e) => {
+            const ward = e.target.value;
+            if (ward === 'none') {
+                recyclerResult.classList.add('hidden');
+                noRecyclerResult.classList.add('hidden');
+                return;
+            }
+
+            const data = recyclerData[ward];
+            if (data.count === 0) {
+                recyclerResult.classList.add('hidden');
+                noRecyclerResult.classList.remove('hidden');
+                nearestWard.textContent = data.nearest;
+            } else {
+                noRecyclerResult.classList.add('hidden');
+                recyclerResult.classList.remove('hidden');
+                rName.textContent = data.name;
+                rCap.textContent = data.cap;
+                
+                // Simulate Real-Time Information
+                const currentHour = new Date().getHours();
+                const isOpen = currentHour >= 8 && currentHour < 18; // Open 8 AM to 6 PM
+                
+                const openStatus = document.getElementById('rOpenStatus');
+                const waitTime = document.getElementById('rWaitTime');
+                const storageLoad = document.getElementById('rStorageLoad');
+                const storageBar = document.getElementById('rStorageBar');
+                const liveIndicator = document.getElementById('liveIndicator');
+                const liveStatusText = document.getElementById('liveStatusText');
+
+                if (isOpen) {
+                    openStatus.textContent = '🟢 Open Now';
+                    openStatus.style.color = '#10b981';
+                    openStatus.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+                    openStatus.style.background = 'rgba(16, 185, 129, 0.1)';
+                    
+                    const wait = Math.floor(Math.random() * 25);
+                    waitTime.textContent = `~${wait} mins`;
+                    waitTime.style.color = wait > 15 ? '#ef4444' : (wait > 5 ? '#f59e0b' : '#10b981');
+                    
+                    liveIndicator.style.backgroundColor = '#10b981';
+                    liveIndicator.style.boxShadow = '0 0 8px #10b981';
+                    liveStatusText.style.color = '#10b981';
+                    liveStatusText.textContent = 'LIVE';
+                } else {
+                    openStatus.textContent = '🔴 Closed';
+                    openStatus.style.color = '#ef4444';
+                    openStatus.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+                    openStatus.style.background = 'rgba(239, 68, 68, 0.1)';
+                    waitTime.textContent = '--';
+                    waitTime.style.color = 'var(--text-muted)';
+                    
+                    liveIndicator.style.backgroundColor = '#ef4444';
+                    liveIndicator.style.boxShadow = '0 0 8px #ef4444';
+                    liveStatusText.style.color = '#ef4444';
+                    liveStatusText.textContent = 'OFFLINE';
+                }
+                
+                const load = Math.floor(Math.random() * 85) + 10;
+                storageLoad.textContent = `${load}%`;
+                storageBar.style.width = `${load}%`;
+                if (load > 80) {
+                    storageLoad.style.color = '#ef4444';
+                    storageBar.style.background = '#ef4444';
+                } else if (load > 50) {
+                    storageLoad.style.color = '#f59e0b';
+                    storageBar.style.background = '#f59e0b';
+                } else {
+                    storageLoad.style.color = '#3b82f6';
+                    storageBar.style.background = '#3b82f6';
+                }
+            }
+        });
+
+        // 6. Ward Analysis Logic
+        const wardList = document.getElementById('wardList');
+        const wardAnalysisInput = document.getElementById('wardAnalysisInput');
+        const wardAnalysisResult = document.getElementById('wardAnalysisResult');
+        let wardTrendChartInstance = null;
+
+        // Populate datalist
+        wards.forEach(ward => {
+            const option = document.createElement('option');
+            option.value = ward;
+            wardList.appendChild(option);
+        });
+
+        wardAnalysisInput.addEventListener('input', (e) => {
+            const ward = e.target.value;
+            const index = wards.indexOf(ward);
+            
+            if (index === -1) {
+                wardAnalysisResult.classList.add('hidden');
+                return;
+            }
+
+            wardAnalysisResult.classList.remove('hidden');
+            
+            // Update stats
+            document.getElementById('waName').textContent = ward;
+            document.getElementById('waCollection').textContent = collectionData[index];
+            document.getElementById('waEfficiency').textContent = efficiencyData[index];
+            document.getElementById('waRecyclers').textContent = recyclerData[ward] ? recyclerData[ward].count : 0;
+            document.getElementById('waGapScore').textContent = gapScores[index][2]; // 2026 score
+
+            // Render Trend Chart
+            const ctxTrend = document.getElementById('wardTrendChart').getContext('2d');
+            if (wardTrendChartInstance) {
+                wardTrendChartInstance.destroy();
+            }
+            
+            // Create gradient
+            const gradient = ctxTrend.createLinearGradient(0, 0, 0, 250);
+            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');
+            gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+            wardTrendChartInstance = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: ['2024', '2025', '2026'],
+                    datasets: [{
+                        label: 'Recycle Gap Score',
+                        data: gapScores[index],
+                        borderColor: '#3b82f6',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#0b0f19',
+                        pointBorderColor: '#3b82f6',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `Gap Score: ${context.parsed.y}`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            max: 100, 
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            title: { display: true, text: 'Gap Score', color: '#94a3b8' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        });
+
+        // 7. Forecast Simulator Logic
+        const yearSlider = document.getElementById('yearSlider');
+        const yearDisplay = document.getElementById('yearDisplay');
+        const projYearSpans = document.querySelectorAll('.proj-year');
+        const forecastBody = document.getElementById('forecastBody');
+
+        // Simple ARIMA-like growth rate mock per ward (e.g., 5% to 12% annual growth)
+        const arimaGrowthRates = [
+            0.08, 0.06, 0.12, 0.07, 0.05, 0.09, 0.06, 0.05, 0.04, 0.04,
+            0.07, 0.08, 0.06, 0.05, 0.04, 0.04, 0.06, 0.08, 0.09, 0.10
+        ];
+
+        function renderForecastTable(targetYear) {
+            forecastBody.innerHTML = '';
+            const baseYear = 2025;
+            const yearsDiff = targetYear - baseYear;
+            
+            wards.forEach((ward, index) => {
+                const baseValue = collectionData[index];
+                // Compound growth formula
+                const projectedValue = baseValue * Math.pow(1 + arimaGrowthRates[index], yearsDiff);
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 500;">${ward}</td>
+                    <td>${baseValue} Tons</td>
+                    <td style="color: var(--accent-secondary); font-weight: 600;">${Math.round(projectedValue)} Tons <span style="font-size: 0.8rem; color: var(--text-muted);"> (+${(arimaGrowthRates[index]*100).toFixed(1)}%/yr)</span></td>
+                `;
+                forecastBody.appendChild(tr);
+            });
+        }
+
+        yearSlider.addEventListener('input', (e) => {
+            const year = e.target.value;
+            yearDisplay.textContent = year;
+            projYearSpans.forEach(span => span.textContent = year);
+            renderForecastTable(year);
+        });
+
+        renderForecastTable(2026); // initial render
+
+        // 8. Export Logic
+        document.getElementById('exportWeeklyBtn').addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const today = new Date().toLocaleDateString();
+            
+            // Header (Minimal colorful approach - Neon green theme)
+            doc.setFillColor(16, 185, 129); // Accent primary
+            doc.rect(0, 0, 210, 35, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text("Bengaluru E-Waste Weekly Report", 15, 22);
+            
+            doc.setFontSize(10);
+            doc.text(`Generated on: ${today}`, 15, 30);
+            
+            // Summary Stats
+            doc.setTextColor(15, 23, 42); 
+            doc.setFontSize(16);
+            doc.text("Executive Summary", 15, 55);
+            
+            const totalWeeklyCollection = Math.round(collectionData.reduce((a, b) => a + b, 0) / 52);
+            const highestCollectionWard = "Whitefield";
+            const highestCollectionValue = Math.round(4160/52);
+            
+            doc.setFontSize(11);
+            doc.setTextColor(100, 116, 139); // slate 500
+            
+            let y = 65;
+            doc.text(`• Total Estimated Weekly E-Waste Collected: ${totalWeeklyCollection} Tons`, 15, y);
+            y += 8;
+            doc.text(`• Highest Collection Ward: ${highestCollectionWard} (${highestCollectionValue} Tons)`, 15, y);
+            y += 8;
+            doc.text(`• Recommended Focus Area: MG Road Area (Zero Authorized Recyclers, High Gap Score)`, 15, y);
+            
+            y += 18;
+            doc.setTextColor(15, 23, 42);
+            doc.setFontSize(16);
+            doc.text("Ward Breakdown (Weekly Metrics)", 15, y);
+            
+            // Table
+            const tableData = wards.map((ward, index) => {
+                const weeklyColl = Math.round(collectionData[index] / 52);
+                const eff = efficiencyData[index];
+                const rec = recyclerData[ward] ? recyclerData[ward].count : 0;
+                return [ward, `${weeklyColl} Tons`, `${eff}%`, rec];
+            });
+            
+            doc.autoTable({
+                startY: y + 6,
+                head: [['Ward', 'Weekly Collection', 'Efficiency', 'Recyclers']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: { fillColor: [59, 130, 246] }, // Accent secondary (Bright blue)
+                alternateRowStyles: { fillColor: [241, 245, 249] }, // Slate 50
+                styles: { fontSize: 10, cellPadding: 4, textColor: [51, 65, 85] }
+            });
+            
+            // Footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for(let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(9);
+                doc.setTextColor(148, 163, 184);
+                doc.text(`Page ${i} of ${pageCount}`, 195, 285, null, null, "right");
+            }
+
+            doc.save("bengaluru_weekly_report.pdf");
+        });
+
+        document.getElementById('exportCsvBtn').addEventListener('click', () => {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Ward,Collection (Tons),Efficiency (%),Recyclers Present\n";
+            wards.forEach((ward, index) => {
+                const coll = collectionData[index];
+                const eff = efficiencyData[index];
+                const rec = recyclerData[ward] ? recyclerData[ward].count : 0;
+                csvContent += `${ward},${coll},${eff},${rec}\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "bengaluru_ewaste_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    </script>
+</body>
+</html>
